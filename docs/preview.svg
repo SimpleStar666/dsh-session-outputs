@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-label="Right sidebar panel listing this conversation's output files">
+  <rect width="640" height="320" fill="#f7f8fa"/>
+  <rect x="40" y="24" width="380" height="272" rx="10" fill="#ffffff" stroke="#e3e6ec"/>
+  <g fill="#c9d1de">
+    <rect x="64" y="52" width="220" height="10" rx="5"/>
+    <rect x="64" y="80" width="300" height="8" rx="4"/>
+    <rect x="64" y="100" width="264" height="8" rx="4"/>
+    <rect x="64" y="132" width="300" height="8" rx="4"/>
+    <rect x="64" y="152" width="200" height="8" rx="4"/>
+  </g>
+  <rect x="440" y="24" width="168" height="272" rx="10" fill="#ffffff" stroke="#e3e6ec"/>
+  <rect x="440" y="24" width="168" height="34" rx="10" fill="#eef2fa"/>
+  <rect x="440" y="48" width="168" height="10" fill="#eef2fa"/>
+  <text x="456" y="46" font-family="system-ui, sans-serif" font-size="11" fill="#4a5568">.dsh-outputs/…</text>
+  <g font-family="system-ui, sans-serif" font-size="10" fill="#2d3748">
+    <rect x="452" y="72" width="144" height="20" rx="5" fill="#f0f4ff"/>
+    <text x="460" y="86">report.md</text>
+    <rect x="452" y="98" width="144" height="20" rx="5" fill="none"/>
+    <text x="460" y="112">data/sales.csv</text>
+    <rect x="452" y="124" width="144" height="20" rx="5" fill="none"/>
+    <text x="460" y="138">chart.png</text>
+    <rect x="452" y="150" width="144" height="20" rx="5" fill="none"/>
+    <text x="460" y="164">notes/todo.md</text>
+  </g>
+  <g font-family="system-ui, sans-serif" font-size="9" fill="#8894a8" text-anchor="end">
+    <text x="592" y="86">12 KB</text>
+    <text x="592" y="112">3.4 MB</text>
+    <text x="592" y="138">88 KB</text>
+    <text x="592" y="164">1.1 KB</text>
+  </g>
+  <text x="456" y="286" font-family="system-ui, sans-serif" font-size="9" fill="#8894a8">只列这个对话的文件</text>
+</svg>
