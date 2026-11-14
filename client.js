@@ -38,6 +38,8 @@ window.__ModuleLoader__.load({
         'empty.title': '这个对话还没有产出文件',
         'empty.body': '之后它写下的文件会出现在这里，集中放在自己的产物文件夹下，不会和其他对话混在一起。',
         'empty.hint': '产物目录：{path}',
+        'empty.history.title': '这个对话没有独立的产物文件夹',
+        'empty.history.body': '它要么创建于插件安装之前，要么工作目录被手动改过，所以它的文件仍写在原工作区里。历史文件不会自动搬过来；新建的对话才有自己的产物文件夹。',
         reload: '刷新',
         open: '打开',
         truncated: '内容较多，只显示前 {count} 项。',
@@ -53,6 +55,8 @@ window.__ModuleLoader__.load({
         'empty.title': 'No files yet',
         'empty.body': 'Files this conversation writes show up here, kept in their own outputs folder instead of mixing with other conversations.',
         'empty.hint': 'Outputs folder: {path}',
+        'empty.history.title': 'This conversation has no outputs folder of its own',
+        'empty.history.body': 'It was created before the plugin was installed, or its working directory was changed by hand, so its files still go to the shared workspace. Existing files are not moved retroactively; new conversations get their own folder.',
         reload: 'Reload',
         open: 'Open',
         truncated: 'Showing the first {count} entries.',
@@ -118,6 +122,24 @@ window.__ModuleLoader__.load({
       const encode = (segment) => encodeURIComponent(segment).replace(/%3A/gi, ':')
       const normalized = String(path).replace(/\\/g, '/').replace(/^(?:\.\/)+/, '')
       return `dsh-resource://file/session/${encode(sessionId)}/${normalized.split('/').map(encode).join('/')}`
+    }
+
+    /**
+     * Compare two absolute paths the way the platform's filesystem does.
+     * Separators are unified and, on Windows, case is ignored.
+     *
+     * @param {string | null | undefined} left - one absolute path.
+     * @param {string | null | undefined} right - the other absolute path.
+     * @returns {boolean} whether they name the same directory.
+     */
+    function samePath(left, right) {
+      if (typeof left !== 'string' || typeof right !== 'string') return false
+      if (left === '' || right === '') return false
+      const normalize = (value) => {
+        const unified = value.replace(/\\/g, '/').replace(/\/+$/, '')
+        return /^[A-Za-z]:/.test(unified) ? unified.toLowerCase() : unified
+      }
+      return normalize(left) === normalize(right)
     }
 
     /**
@@ -206,6 +228,14 @@ window.__ModuleLoader__.load({
       const root = `${OUTPUTS_DIRECTORY}/${sessionId}`
       const tabActions = tabInfo.tab.actions
       const panelId = tabInfo.panel.id
+      // The working directory is the mutable root the Host moves; a conversation
+      // that still sits on the workspace root was never isolated (it either
+      // predates the plugin or its directory was changed by hand), and the empty
+      // state must say so rather than implying the files were lost.
+      const workingDirectory = props.useProjection('workingDirectory')
+      const expectedDirectory = cwd === undefined ? undefined : `${cwd}/${OUTPUTS_DIRECTORY}/${sessionId}`
+      const isolated = expectedDirectory !== undefined && samePath(workingDirectory, expectedDirectory)
+      const visible = tabInfo.tab.visible === true
 
       useEffect(() => {
         if (cwd === undefined || cwd === '') {
@@ -233,6 +263,15 @@ window.__ModuleLoader__.load({
         }
       }, [cwd, root, listDir, tick])
 
+      // Files appear while the agent works, so the panel keeps up on its own.
+      // Only an isolated conversation has a folder worth re-reading, and only
+      // while the tab is actually on screen.
+      useEffect(() => {
+        if (!visible || !isolated) return undefined
+        const timer = setInterval(() => setTick((value) => value + 1), 5000)
+        return () => clearInterval(timer)
+      }, [visible, isolated])
+
       const open = useCallback((path) => {
         tabActions.openResource(fileAddress(sessionId, path), { paneId: panelId })
       }, [sessionId, tabActions, panelId])
@@ -243,7 +282,7 @@ window.__ModuleLoader__.load({
       const header = h('div', { className: 'dsso-head' },
         h('span', {
           className: 'dsso-path',
-          title: cwd === undefined ? '' : `${cwd.replace(/[\\/]+$/, '')}\\${OUTPUTS_DIRECTORY}\\${sessionId}`,
+          title: expectedDirectory === undefined ? '' : expectedDirectory.replace(/\//g, '\\'),
         }, `${OUTPUTS_DIRECTORY}/${sessionId}`),
         count === undefined ? null : h('span', { className: 'dsso-count' }, t('count', { count })),
         h('button', { type: 'button', className: 'dsso-btn', onClick: reload, title: t('reload') }, t('reload')))
@@ -257,11 +296,14 @@ window.__ModuleLoader__.load({
           h('div', { className: 'dsso-status' }, h('p', null, t('empty.hint', { path: root }))))
       }
       if (state.status === 'missing' || (state.status === 'ready' && state.files.length === 0)) {
+        // A conversation with no folder of its own is not the same situation as
+        // a fresh one that simply has not written anything yet.
+        const historic = state.status === 'missing' && !isolated
         return h('div', { className: 'dsso' }, header,
           h('div', { className: 'dsso-status' },
-            h('p', { className: 'dsso-title' }, t('empty.title')),
-            h('p', null, t('empty.body')),
-            h('p', { className: 'dsso-code' }, t('empty.hint', { path: root }))))
+            h('p', { className: 'dsso-title' }, t(historic ? 'empty.history.title' : 'empty.title')),
+            h('p', null, t(historic ? 'empty.history.body' : 'empty.body')),
+            historic ? null : h('p', { className: 'dsso-code' }, t('empty.hint', { path: root }))))
       }
       if (state.status === 'error') {
         const message = state.code === 'workspace-file/outside-workspace'
@@ -349,7 +391,7 @@ window.__ModuleLoader__.load({
     exports.name = 'session-outputs-client'
     exports.inject = ['slots', 'locale', 'sidebarRightTabs', 'remote', 'remote.workspaceFiles']
     exports.apply = apply
-    exports.__test = { fileAddress, formatSize, collectFiles, KIND, ID, OUTPUTS_DIRECTORY }
+    exports.__test = { fileAddress, formatSize, samePath, collectFiles, KIND, ID, OUTPUTS_DIRECTORY }
     return module.exports
   },
 })

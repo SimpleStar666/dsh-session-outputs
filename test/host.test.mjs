@@ -1,11 +1,12 @@
 /** Host-half unit tests: config normalization, folder naming, and the establishment rule. */
 import assert from 'node:assert/strict'
-import { mkdtemp, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
-  establish, folderName, internals, isTopLevel, normalizeConfig, outputDirectoryFor, OUTPUTS_DIRECTORY,
+  establish, folderName, internals, isFirstUseWorkspace, isTopLevel, normalizeConfig,
+  outputDirectoryFor, OUTPUTS_DIRECTORY, samePath, shouldIsolate,
 } from '../index.js'
 
 /** Scratch space beside the tests: the system temp directory is not writable here. */
@@ -58,14 +59,16 @@ function fakeAgent({ id = 'session-1a2b3c4d', cwd, origin, delegationDepth } = {
 }
 
 test('normalizeConfig applies defaults and rejects malformed values', () => {
-  assert.deepEqual(normalizeConfig(undefined), { enabled: true, directory: '.dsh-outputs', isolate: true })
-  assert.deepEqual(normalizeConfig({}), { enabled: true, directory: '.dsh-outputs', isolate: true })
+  assert.deepEqual(normalizeConfig(undefined), { enabled: true, directory: '.dsh-outputs', isolate: true, mode: 'managed' })
+  assert.deepEqual(normalizeConfig({}), { enabled: true, directory: '.dsh-outputs', isolate: true, mode: 'managed' })
   assert.equal(normalizeConfig({ enabled: false }).enabled, false)
   assert.equal(normalizeConfig({ isolate: false }).isolate, false)
   assert.equal(normalizeConfig({ directory: 'out' }).directory, 'out')
+  assert.equal(normalizeConfig({ mode: 'all' }).mode, 'all')
 
   assert.throws(() => normalizeConfig({ enabled: 'yes' }), TypeError)
   assert.throws(() => normalizeConfig({ isolate: 1 }), TypeError)
+  assert.throws(() => normalizeConfig({ mode: 'every' }), TypeError)
   assert.throws(() => normalizeConfig({ directory: '' }), TypeError)
   // A separator would escape the single folder this plugin owns.
   assert.throws(() => normalizeConfig({ directory: 'a/b' }), TypeError)
@@ -73,6 +76,89 @@ test('normalizeConfig applies defaults and rejects malformed values', () => {
   assert.throws(() => normalizeConfig({ directory: '..' }), TypeError)
   assert.throws(() => normalizeConfig({ directory: '.' }), TypeError)
   assert.throws(() => normalizeConfig([]), TypeError)
+})
+
+test('samePath compares the way the platform filesystem does', () => {
+  assert.equal(samePath('C:\\a\\b', 'C:/a/b'), true)
+  assert.equal(samePath('C:\\a\\b\\', 'C:\\a\\b'), true)
+  assert.equal(samePath('C:\\A\\B', 'c:\\a\\b'), process.platform === 'win32')
+  assert.equal(samePath('/a/b', '/a/b/'), true)
+  assert.equal(samePath('/a/b', '/a/c'), false)
+  assert.equal(samePath(undefined, '/a/b'), false)
+  assert.equal(samePath('', '/a/b'), false)
+})
+
+test('shouldIsolate honours mode and the subagent rule', async () => {
+  const root = await scratch()
+  try {
+    const project = join(root, 'project')
+    const other = join(root, 'other')
+    await mkdir(project, { recursive: true })
+    await mkdir(other, { recursive: true })
+    // A registry whose first-use workspace is `project`.
+    const registry = {
+      state: { defaultWorkspaceId: 'ws-1' },
+      get: (id) => (id === 'ws-1' ? { id, path: project } : undefined),
+    }
+    const ctx = { get: (name) => (name === 'workspaceRegistry' ? registry : undefined) }
+
+    assert.equal(isFirstUseWorkspace(ctx, project), true)
+    assert.equal(isFirstUseWorkspace(ctx, other), false)
+    // A composition without the registry cannot decide, and must not silently
+    // stop isolating the conversations this plugin exists for.
+    assert.equal(isFirstUseWorkspace({ get: () => undefined }, project), undefined)
+
+    const inProject = fakeAgent({ cwd: project }).session
+    const inOther = fakeAgent({ cwd: other }).session
+    const subagent = fakeAgent({ cwd: project, origin: 'subagent' }).session
+    const noCwd = fakeAgent({ cwd: undefined }).session
+
+    // managed: only the first-use workspace.
+    assert.equal(shouldIsolate(ctx, normalizeConfig(undefined), inProject), true)
+    assert.equal(shouldIsolate(ctx, normalizeConfig(undefined), inOther), false)
+    // all: every top-level conversation.
+    assert.equal(shouldIsolate(ctx, normalizeConfig({ mode: 'all' }), inOther), true)
+    // Subagents and sessions without a root are never isolated.
+    assert.equal(shouldIsolate(ctx, normalizeConfig({ mode: 'all' }), subagent), false)
+    assert.equal(shouldIsolate(ctx, normalizeConfig({ mode: 'all' }), noCwd), false)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('establish leaves an explicitly added project workspace untouched', async () => {
+  const root = await scratch()
+  try {
+    const project = join(root, 'my-repo')
+    const firstUse = join(root, 'default-workspace')
+    await mkdir(project, { recursive: true })
+    await mkdir(firstUse, { recursive: true })
+    const registry = {
+      state: { defaultWorkspaceId: 'ws-1' },
+      get: (id) => (id === 'ws-1' ? { id, path: firstUse } : undefined),
+    }
+    const logger = memoryLogger()
+    const sets = []
+    const ctx = {
+      logger,
+      get: (name) => (name === 'workspaceRegistry' ? registry : undefined),
+      workingDirectory: {
+        get: (session) => session.header.cwd,
+        set: async (agent, path) => { sets.push(path); return path },
+      },
+    }
+
+    assert.equal(await establish(ctx, normalizeConfig(undefined), fakeAgent({ cwd: project }), undefined), undefined)
+    assert.deepEqual(sets, [], 'a project the user added must keep its own directory')
+    await assert.rejects(stat(join(project, OUTPUTS_DIRECTORY)), { code: 'ENOENT' })
+
+    // The first-use workspace still gets isolated.
+    const directory = await establish(ctx, normalizeConfig(undefined), fakeAgent({ cwd: firstUse }), undefined)
+    assert.equal(directory, join(firstUse, OUTPUTS_DIRECTORY, 'session-1a2b3c4d'))
+    assert.deepEqual(sets, [directory])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
 })
 
 test('isTopLevel excludes subagents and delegated sessions', () => {

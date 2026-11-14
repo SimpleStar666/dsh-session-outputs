@@ -96,7 +96,11 @@ await check('the host half exports the cordis contract', async () => {
 await check('the settings documented in the README are the ones the host accepts', async () => {
   const host = await import(new URL('../index.js', import.meta.url))
   const settings = host.normalizeConfig(undefined)
-  assert.deepEqual(Object.keys(settings).sort(), ['directory', 'enabled', 'isolate'])
+  assert.deepEqual(Object.keys(settings).sort(), ['directory', 'enabled', 'isolate', 'mode'])
+  const readme = await readFile(join(root, 'README.md'), 'utf8')
+  for (const key of Object.keys(settings)) {
+    assert.ok(readme.includes(`\`${key}\``), `README must document the \`${key}\` setting`)
+  }
 })
 
 await check('the client half is syntactically valid', async () => {

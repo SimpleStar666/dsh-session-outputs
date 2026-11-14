@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-outputs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "会话产物目录 dsh-session-outputs：每个对话自动获得自己的产物文件夹，右侧栏「本对话产物」面板只列出这个对话产出的文件、可点开预览。给每天在 DSH 里开很多对话、结果所有文件都堆在同一个工作区里分不清哪次做的人用。明确不做：不改会话 header.cwd、不迁移历史文件、不删除任何文件、不做 git 操作，也不替代内置的文件树页（它仍然浏览整个工作区）。",
   "type": "module",
   "private": false,

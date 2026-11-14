@@ -69,6 +69,19 @@ test('fileAddress encodes every segment and keeps a drive letter literal', async
   assert.equal(fileAddress('s1', 'C:/x/y.txt'), 'dsh-resource://file/session/s1/C:/x/y.txt')
 })
 
+test('samePath compares the way the platform filesystem does', async () => {
+  const { exports } = await loadBundle()
+  const { samePath } = exports.__test
+
+  assert.equal(samePath('C:\\work\\project', 'C:/work/project'), true)
+  assert.equal(samePath('C:\\work\\project\\', 'C:\\work\\project'), true)
+  assert.equal(samePath('/work/project', '/work/project/'), true)
+  assert.equal(samePath('/work/project', '/work/other'), false)
+  assert.equal(samePath(undefined, '/work/project'), false)
+  assert.equal(samePath(null, '/work/project'), false)
+  assert.equal(samePath('', '/work/project'), false)
+})
+
 test('formatSize is compact and tolerant of missing sizes', async () => {
   const { exports } = await loadBundle()
   const { formatSize } = exports.__test
