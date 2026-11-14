@@ -1,0 +1,3 @@
+- insert:
+    - id: session-outputs
+      name: dsh-session-outputs

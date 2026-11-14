@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Per-conversation outputs dsh-session-outputs",
+    "description": "Gives every conversation its own outputs folder and adds a \"This conversation\" panel to the right sidebar that lists only the files that conversation produced, each one click away from a preview. For people who start several conversations a day and can no longer tell which one wrote which file. It does not: rewrite a session's recorded cwd, move or delete existing files, run git commands, or replace the built-in Files page, which still browses the whole workspace.",
+    "detail": "docs/DETAIL.md"
+  }
+}
