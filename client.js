@@ -275,17 +275,20 @@ window.__ModuleLoader__.load({
         h('div', { className: 'dsso-list' },
           state.files.map((file) => {
             const openable = canOpen(file.path)
+            // Show the path relative to this conversation's folder: the prefix
+            // is the same on every row and only pushes the name out of view.
+            const shown = file.path.startsWith(`${root}/`) ? file.path.slice(root.length + 1) : file.path
             return h('button', {
               key: file.path,
               type: 'button',
               className: 'dsso-row',
               title: file.path,
-              'aria-label': `${t('open')}: ${file.path}`,
+              'aria-label': `${t('open')}: ${shown}`,
               'aria-disabled': openable ? undefined : 'true',
               disabled: !openable,
               onClick: openable ? () => open(file.path) : undefined,
             },
-              h('span', { className: 'dsso-name' }, file.path),
+              h('span', { className: 'dsso-name' }, shown),
               h('span', { className: 'dsso-size' }, formatSize(file.size)))
           })),
         state.truncated ? h('div', { className: 'dsso-note' }, t('truncated', { count: MAX_ENTRIES })) : null)
