@@ -20,6 +20,7 @@
     "locale/*.json",
     "docs",
     "icon.svg",
+    "plugin-index.json",
     "README.md",
     "LICENSE"
   ],

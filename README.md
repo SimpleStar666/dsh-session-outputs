@@ -26,14 +26,37 @@ DSH 里「工作区 = 一个目录 = 会话的 cwd」。同一个工作区下开
 
 ## 安装
 
-```powershell
-# 1) 装进 profile（把路径换成你 checkout 的位置）
-dsh plugin --profile desktop add file:C:\path\to\dsh-session-outputs
+这个包只发布在 GitHub，npm 上没有同名包（`registry.npmjs.org/dsh-session-outputs` 返回 404）。所以「在添加插件里填包名」装不上，插件市场也搜不到。三种入口任选。
 
-# 2) 彻底退出 DSH（不是关窗口），再打开
+### ① 从发现页装（推荐，不经过模型）
+
+1. 插件页 → 更多 → 实验性插件，启用「自定义插件索引」
+2. 插件页 → 发现 → 添加索引源，填：
+
+   ```
+   https://cdn.jsdelivr.net/gh/SimpleStar666/dsh-session-outputs@main/plugin-index.json
+   ```
+
+   拉不动 jsDelivr 就换 `https://raw.githubusercontent.com/SimpleStar666/dsh-session-outputs/main/plugin-index.json`。
+3. 搜「本对话产物」或 `dsh-session-outputs`，点安装
+
+这条路径在界面上点两下就完事，开着「个性化推荐」也不受影响。
+
+### ② 本地目录
+
+1. 下载 ZIP：`https://github.com/SimpleStar666/dsh-session-outputs/archive/refs/heads/main.zip`，解压
+2. 插件页 → 添加插件 → 箭头 → 安装第三方插件，填解压目录的绝对路径
+3. 提示需要重启就完全退出 DSH 再打开（只关窗口不算）
+
+### ③ 命令行
+
+```powershell
+dsh plugin --profile <profile名> add file:C:\path\to\dsh-session-outputs
 ```
 
-也可以用 DSH 界面：**设置 → 插件 → 安装插件**，填本目录的绝对路径。装完必须**完全重启**，只关窗口不算。
+> 入口在侧栏「插件」页的「添加插件」。设置页里的插件列表是只读的，没有安装按钮。
+>
+> 为什么让模型代装会被拒：会话里开着「个性化推荐」时，`official-plugins` 技能会进会话，它的规则写着不许调用插件管理工具、不许自己改设置。要让它代装，先关掉「插件推荐」这一行，并给那次会话完全访问权限。
 
 ## 用法
 

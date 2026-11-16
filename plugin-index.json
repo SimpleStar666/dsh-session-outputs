@@ -1,0 +1,58 @@
+{
+  "format": 1,
+  "title": {
+    "en": "SimpleStar666's DSH plugins",
+    "zh": "SimpleStar666 的 DSH 插件"
+  },
+  "description": {
+    "en": "DeepSeek Harness plugins maintained by SimpleStar666.",
+    "zh": "SimpleStar666 维护的 DeepSeek Harness 插件。"
+  },
+  "metadata": {
+    "categories": {},
+    "labels": {},
+    "sortKeys": {}
+  },
+  "plugins": [
+    {
+      "name": "dsh-session-outputs",
+      "title": {
+        "en": "Session outputs",
+        "zh": "本对话产物"
+      },
+      "description": {
+        "en": "Gives each conversation its own outputs folder and a right-sidebar panel that lists only that conversation's files.",
+        "zh": "每个对话一个产物文件夹，右侧栏「本对话产物」面板只列出这个对话产出的文件，点开即可预览。"
+      },
+      "icon": "icon.svg",
+      "author": "SimpleStar666",
+      "homepage": "https://github.com/SimpleStar666/dsh-session-outputs",
+      "repository": {
+        "url": "https://github.com/SimpleStar666/dsh-session-outputs"
+      },
+      "metadata": {
+        "keywords": [
+          "session",
+          "outputs",
+          "workspace",
+          "artifact",
+          "sidebar"
+        ],
+        "labels": [],
+        "sortKeys": {}
+      },
+      "versions": [
+        {
+          "version": "0.2.0",
+          "publishTimestamp": 1794622561,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/SimpleStar666/dsh-session-outputs",
+            "commit": "d9bdbc3b371421e31f54917fae7b031cd9e2dcfe"
+          },
+          "engines": {}
+        }
+      ]
+    }
+  ]
+}
