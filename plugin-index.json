@@ -48,7 +48,7 @@
           "source": {
             "type": "git",
             "url": "https://github.com/SimpleStar666/dsh-session-outputs",
-            "commit": "d9bdbc3b371421e31f54917fae7b031cd9e2dcfe"
+            "commit": "c7212837cba2ba9a89b67a3a7c3ae944e819d6f9"
           },
           "engines": {}
         }
